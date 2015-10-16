@@ -13,14 +13,19 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import com.example.voicerecognition.R;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.internal.LinkedTreeMap;
 
 import android.app.Activity;
 import android.content.Context;
+import android.database.CursorJoiner.Result;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -46,20 +51,19 @@ public class MainActivity extends Activity {
     // (es_es), etc
     String language = "en_us";
 
-    // Key obtained through Google Developer group
-    String api_key = "Put_your_Android_Speech_API_key_here";
-
     // Name of the sound file (.flac)
     String fileName = Environment.getExternalStorageDirectory()
             + "/recording.flac";
 
     // URL for Google API
     String root = "https://www.google.com/speech-api/v2/recognize";
-    String up_p1 = "?output=json&lang=" + language + "&key=" + api_key;
+    String up_p1 = "?output=json&lang=" + language + "&key=" + Constants.API_KEY;
 
     // Constants
     private int mErrorCode = -1;
     private static final int DIALOG_RECORDING_ERROR = 0;
+
+    private static final String TAG = "VoiceRecognizer";
     // Rate of the recorded sound file
     int sampleRate;
     // Recorder instance
@@ -112,12 +116,22 @@ public class MainActivity extends Activity {
             case 2:
                 Log.d("ParseStarter", msg.getData().getString("post"));
                 final String f_msg = msg.getData().getString("post");
+                final StringBuilder builder = new StringBuilder(f_msg);
+                Gson gson = new Gson();
+                try {
+                    Response response = gson.fromJson(f_msg, Response.class);
+                    String best = Response.getTranscription(response);
+                    if (best != null) {
+                        builder.append("\n\nBest: ").append(best);
+                    }
+                } catch (JsonSyntaxException e) {
+                    Log.d(TAG, "Couldn't parse response");
+                }
                 handler.post(new Runnable() { // This thread runs in the UI
                     // TREATMENT FOR GOOGLE RESPONSE
                     @Override
                     public void run() {
-                        System.out.println(f_msg);
-                        txtView.setText(f_msg);
+                        txtView.setText(builder.toString());
                     }
                 });
                 break;
@@ -367,4 +381,21 @@ public class MainActivity extends Activity {
         return null;
     }
 
+    static class Response {
+        public ArrayList<LinkedTreeMap<String, Object>> result;
+        
+        public static String getTranscription(Response response) {
+            String transcription = null;
+            try {
+                if (!response.result.isEmpty()) {
+                    ArrayList<LinkedTreeMap<String, Object>> transcriptions = (ArrayList<LinkedTreeMap<String, Object>>) response.result.get(0).get("alternative");
+                    if (!transcriptions.isEmpty()) {
+                        transcription = (String) transcriptions.get(0).get("transcript");
+                    }
+                }
+            } catch (Exception e) {
+            }
+            return transcription;
+        }
+    }
 }
