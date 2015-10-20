@@ -2,9 +2,54 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-   
     tools:context=".MainActivity" >
 
+    <LinearLayout
+            android:id="@+id/recorder_buttons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+        <Button
+                android:id="@+id/record"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:enabled="true"
+                android:onClick="recordButton"
+                android:text="Record" />
+
+        <Button
+                android:id="@+id/stop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:enabled="false"
+                android:onClick="stopRecording"
+                android:text="Stop" />
+
+        <Button
+                android:id="@+id/listen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="listenRecord"
+                android:layout_weight="1"
+                android:enabled="false"
+                android:text="Listen" />
+    </LinearLayout>
+    <LinearLayout
+            android:id="@+id/additional_buttons"
+            android:layout_below="@id/recorder_buttons"
+            android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:layout_height="wrap_content">
+        <Button
+                android:id="@+id/run1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:onClick="run1"
+                android:text="Run"/>
+    </LinearLayout>
     <TextView
         android:id="@+id/txtView"
         android:layout_width="wrap_content"
@@ -12,8 +57,8 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
-        android:layout_below="@+id/record"
-        android:layout_marginTop="50dp"
+        android:layout_below="@id/additional_buttons"
+        android:layout_marginTop="10dp"
         android:ems="10"
         android:hint="RECORD IN ENGLISH!"
         android:inputType="textMultiLine" >
@@ -21,35 +66,6 @@
         <requestFocus />
     </TextView>
 
-    <Button
-        android:id="@+id/record"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/editText1"
-        android:enabled="true"
-        android:onClick="recordButton"
-        android:text="Record" />
 
-    <Button
-        android:id="@+id/stop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/editText1"
-        android:layout_centerHorizontal="true"
-        android:enabled="false"
-        android:onClick="stopRecording"
-        android:text="Stop" />
-
-    <Button
-        android:id="@+id/listen"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-         android:onClick="listenRecord"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginRight="14dp"
-        android:enabled="false"
-        
-        android:text="Listen" />
 
 </RelativeLayout>

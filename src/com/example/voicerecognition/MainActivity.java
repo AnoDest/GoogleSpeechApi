@@ -1,31 +1,12 @@
 package com.example.voicerecognition;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Scanner;
-
-import javax.net.ssl.HttpsURLConnection;
-
-import com.example.voicerecognition.R;
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.internal.LinkedTreeMap;
-
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
-import android.database.CursorJoiner.Result;
+import android.media.MediaCodec;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -35,6 +16,26 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.google.gson.internal.LinkedTreeMap;
+
+import javax.net.ssl.HttpsURLConnection;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 /**
  * @author Serhii Kamenkovych Speech API v2
@@ -49,15 +50,14 @@ public class MainActivity extends Activity {
     // Language spoken
     // Obs: It requires Google codes: English(en_us), Portuguese(pt_br), Spanish
     // (es_es), etc
-    String language = "en_us";
+    public static final String language = "en_us";
 
     // Name of the sound file (.flac)
-    String fileName = Environment.getExternalStorageDirectory()
-            + "/recording.flac";
+    public static final String fileName = Environment.getExternalStorageDirectory() + "/recording.flac";
 
     // URL for Google API
-    String root = "https://www.google.com/speech-api/v2/recognize";
-    String up_p1 = "?output=json&lang=" + language + "&key=" + Constants.API_KEY;
+    public static final String ROOT = "https://www.google.com/speech-api/v2/recognize";
+    public static final String UP_P = "?output=json&lang=" + language + "&key=" + Constants.API_KEY;
 
     // Constants
     private int mErrorCode = -1;
@@ -67,7 +67,7 @@ public class MainActivity extends Activity {
     // Rate of the recorded sound file
     int sampleRate;
     // Recorder instance
-    private Recorder mRecorder;
+    private FLACRecorder mRecorder;
 
     // Output for Google answer
     TextView txtView;
@@ -80,16 +80,16 @@ public class MainActivity extends Activity {
     private Handler mRecordingHandler = new Handler(new Handler.Callback() {
         public boolean handleMessage(Message m) {
             switch (m.what) {
-            case FLACRecorder.MSG_AMPLITUDES:
-                FLACRecorder.Amplitudes amp = (FLACRecorder.Amplitudes) m.obj;
+            case FLACRecorderImpl.MSG_AMPLITUDES:
+                FLACRecorderImpl.Amplitudes amp = (FLACRecorderImpl.Amplitudes) m.obj;
 
                 break;
 
-            case FLACRecorder.MSG_OK:
+            case FLACRecorderImpl.MSG_OK:
                 // Ignore
                 break;
 
-            case Recorder.MSG_END_OF_RECORDING:
+            case FLACRecorder.MSG_END_OF_RECORDING:
 
                 break;
 
@@ -156,7 +156,7 @@ public class MainActivity extends Activity {
         listenButton = (Button) this.findViewById(R.id.listen);
         listenButton.setEnabled(false);
 
-        mRecorder = new Recorder(this, mRecordingHandler);
+        mRecorder = new FLACRecorder(this, mRecordingHandler);
 
     }
 
@@ -231,7 +231,7 @@ public class MainActivity extends Activity {
             // see curl examples full-duplex for more on 'PAIR'. Just a globally
             // uniq value typ=long->String.
             // API KEY value is part of value in UP_URL_p2
-            upChannel(root + up_p1, messageHandler2, data2);
+            upChannel(ROOT + UP_P, messageHandler2, data2);
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -379,6 +379,128 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
         return null;
+    }
+
+
+    public void run1(View view) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            extract("rec.mp4");
+            extract("rec2.mp4");
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void extract(String fileName) {
+        final MediaExtractor extractor = new MediaExtractor();
+        try {
+            extractor.setDataSource(Environment.getExternalStorageDirectory() + "/" + fileName);
+            Log.i(TAG, fileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        int numTracks = extractor.getTrackCount();
+        MediaCodec codec = null;
+        MediaFormat audioFormat = null;
+        int sampleRate = 0;
+        for (int i = 0; i < numTracks; ++i) {
+            MediaFormat format = extractor.getTrackFormat(i);
+            String mime = format.getString(MediaFormat.KEY_MIME);
+            StringBuilder builder = new StringBuilder();
+            builder.append(mime);
+            if (format.containsKey(MediaFormat.KEY_SAMPLE_RATE)) {
+                builder.append(" ").append(MediaFormat.KEY_SAMPLE_RATE);
+                sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+                builder.append(sampleRate);
+                if (mime.startsWith("audio")) {
+                    extractor.selectTrack(i);
+
+                    try {
+                        audioFormat = format;
+                        codec = MediaCodec.createDecoderByType(mime);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return;
+                    }
+                }
+            }
+            if (format.containsKey(MediaFormat.KEY_DURATION)) {
+                builder.append(" ").append(MediaFormat.KEY_DURATION);
+                builder.append(format.getLong(MediaFormat.KEY_DURATION));
+            }
+            Log.i(TAG, builder.toString());
+        }
+        if (codec == null) {
+            return;
+        }
+        FileOutputStream os = null;
+        String name = fileName.substring(0, fileName.lastIndexOf('.'));
+        try {
+            os = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + name + "_" + sampleRate + ".pcm");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+        final FileOutputStream finalOs = os;
+        codec.setCallback(new MediaCodec.Callback() {
+            MediaFormat mOutputFormat;
+            @Override
+            public void onInputBufferAvailable(MediaCodec codec, int index) {
+                ByteBuffer inputBuffer = codec.getInputBuffer(index);
+                int size = extractor.readSampleData(inputBuffer, 0);
+                Log.i(TAG, "InId " + index + "; " + name + " info " + size + " " + extractor.getSampleTime());
+                if (size >= 0 ) {
+                    boolean end = !extractor.advance();
+                    codec.queueInputBuffer(index, 0, size, extractor.getSampleTime(), end ? MediaCodec.BUFFER_FLAG_END_OF_STREAM : 0);
+                }
+            }
+
+            @Override
+            public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
+                Log.i(TAG, "OutId " + index + "; " + name + " info " + info.flags + " " + info.offset + " " + info.size);
+                ByteBuffer outputBuffer = codec.getOutputBuffer(index);
+                byte[] array = new byte[info.size];
+                outputBuffer.get(array);
+                try {
+                    finalOs.write(array, info.offset, info.size);
+                } catch (IOException e) {
+                }
+                codec.releaseOutputBuffer(index, false);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    try {
+                        finalOs.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        finalOs.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    codec.stop();
+                    codec.release();
+                    extractor.release();
+                }
+            }
+
+            @Override
+            public void onError(MediaCodec codec, MediaCodec.CodecException e) {
+            }
+
+            @Override
+            public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
+                mOutputFormat = format;
+                Log.i(TAG, name + "->" + format.toString());
+            }
+        });
+        codec.configure(
+                audioFormat,//format of input data ::decoder OR desired format of the output data:encoder
+                null,//Specify a surface on which to render the output of this decoder
+                null,//Specify a crypto object to facilitate secure decryption
+                0 //For Decoding, encoding use: CONFIGURE_FLAG_ENCODE
+        );
+        codec.start();
+        //codec.flush();
     }
 
     static class Response {
