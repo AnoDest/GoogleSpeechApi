@@ -435,8 +435,9 @@ public class MainActivity extends Activity {
         }
         FileOutputStream os = null;
         String name = fileName.substring(0, fileName.lastIndexOf('.'));
+        final String pcmFileName = Environment.getExternalStorageDirectory() + "/" + name + "_22000.pcm";
         try {
-            os = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + name + "_" + sampleRate + ".pcm");
+            os = new FileOutputStream(pcmFileName);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return;
@@ -448,25 +449,29 @@ public class MainActivity extends Activity {
             public void onInputBufferAvailable(MediaCodec codec, int index) {
                 ByteBuffer inputBuffer = codec.getInputBuffer(index);
                 int size = extractor.readSampleData(inputBuffer, 0);
-                Log.i(TAG, "InId " + index + "; " + name + " info " + size + " " + extractor.getSampleTime());
                 if (size >= 0 ) {
-                    boolean end = !extractor.advance();
-                    codec.queueInputBuffer(index, 0, size, extractor.getSampleTime(), end ? MediaCodec.BUFFER_FLAG_END_OF_STREAM : 0);
+                    codec.queueInputBuffer(index, 0, size, extractor.getSampleTime(), 0);
+                    extractor.advance();
+                } else {
+                    codec.queueInputBuffer(index, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                 }
             }
 
             @Override
             public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
-                Log.i(TAG, "OutId " + index + "; " + name + " info " + info.flags + " " + info.offset + " " + info.size);
                 ByteBuffer outputBuffer = codec.getOutputBuffer(index);
+                int sampleRate = mOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
                 byte[] array = new byte[info.size];
                 outputBuffer.get(array);
+                Resampler resampler = new Resampler();
                 try {
-                    finalOs.write(array, info.offset, info.size);
+                    byte[] resampled = resampler.reSample(array, 16, sampleRate, 22000);
+                    finalOs.write(resampled, 0, resampled.length);
                 } catch (IOException e) {
                 }
                 codec.releaseOutputBuffer(index, false);
                 if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    Log.i(TAG, "Finished for " + name);
                     try {
                         finalOs.flush();
                     } catch (IOException e) {
@@ -500,7 +505,6 @@ public class MainActivity extends Activity {
                 0 //For Decoding, encoding use: CONFIGURE_FLAG_ENCODE
         );
         codec.start();
-        //codec.flush();
     }
 
     static class Response {
