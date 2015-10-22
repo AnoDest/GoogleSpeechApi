@@ -1,11 +1,7 @@
 package com.example.voicerecognition;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
-import android.media.MediaCodec;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -15,27 +11,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.internal.LinkedTreeMap;
-
-import javax.net.ssl.HttpsURLConnection;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Scanner;
 
 /**
  * @author Serhii Kamenkovych Speech API v2
@@ -54,10 +29,6 @@ public class MainActivity extends Activity {
 
     // Name of the sound file (.flac)
     public static final String fileName = Environment.getExternalStorageDirectory() + "/recording.flac";
-
-    // URL for Google API
-    public static final String ROOT = "https://www.google.com/speech-api/v2/recognize";
-    public static final String UP_P = "?output=json&lang=" + language + "&key=" + Constants.API_KEY;
 
     // Constants
     private int mErrorCode = -1;
@@ -104,46 +75,9 @@ public class MainActivity extends Activity {
         }
     });
 
-    // UPSTREAM channel. its servicing a thread and should have its own handler
-    Handler messageHandler2 = new Handler() {
-
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            switch (msg.what) {
-            case 1: // GET DOWNSTREAM json
-                Log.d("ParseStarter", msg.getData().getString("post"));
-                break;
-            case 2:
-                Log.d("ParseStarter", msg.getData().getString("post"));
-                final String f_msg = msg.getData().getString("post");
-                final StringBuilder builder = new StringBuilder(f_msg);
-                Gson gson = new Gson();
-                try {
-                    Response response = gson.fromJson(f_msg, Response.class);
-                    String best = Response.getTranscription(response);
-                    if (best != null) {
-                        builder.append("\n\nBest: ").append(best);
-                    }
-                } catch (JsonSyntaxException e) {
-                    Log.d(TAG, "Couldn't parse response");
-                }
-                handler.post(new Runnable() { // This thread runs in the UI
-                    // TREATMENT FOR GOOGLE RESPONSE
-                    @Override
-                    public void run() {
-                        txtView.setText(builder.toString());
-                    }
-                });
-                break;
-            }
-
-        }
-    }; // UPstream handler end
-
     /**************************************************************************************************************
      * Implementation
      **/
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -166,13 +100,13 @@ public class MainActivity extends Activity {
 
     public void recordButton(View v) {
 
-        mRecorder.start(fileName);
-
-        txtView.setText("");
-        recordButton.setEnabled(false);
-        stopButton.setEnabled(true);
-        Toast.makeText(getApplicationContext(), "Recording...",
-                Toast.LENGTH_LONG).show();
+        //mRecorder.start(fileName);
+        //
+        //txtView.setText("");
+        //recordButton.setEnabled(false);
+        //stopButton.setEnabled(true);
+        //Toast.makeText(getApplicationContext(), "Recording...",
+        //        Toast.LENGTH_LONG).show();
 
     }
 
@@ -181,15 +115,16 @@ public class MainActivity extends Activity {
      */
 
     public void stopRecording(View v) {
-
-        Toast.makeText(getApplicationContext(), "Loading...", Toast.LENGTH_LONG)
-                .show();
-        recordButton.setEnabled(true);
-        listenButton.setEnabled(true);
-
-        sampleRate = mRecorder.mFLACRecorder.getSampleRate();
-        getTranscription(sampleRate);
-        mRecorder.stop();
+        //
+        //Toast.makeText(getApplicationContext(), "Loading...", Toast.LENGTH_LONG)
+        //        .show();
+        //recordButton.setEnabled(true);
+        //listenButton.setEnabled(true);
+        //
+        //sampleRate = mRecorder.mFLACRecorder.getSampleRate();
+        //
+        //getTranscription(sampleRate);
+        //mRecorder.stop();
 
     }
 
@@ -208,320 +143,64 @@ public class MainActivity extends Activity {
      * Method related to Google Voice Recognition
      **/
 
-    public void getTranscription(int sampleRate) {
-
-        File myfil = new File(fileName);
-        if (!myfil.canRead())
-            Log.d("ParseStarter", "FATAL no read access");
-
-        // UP chan, process the audio byteStream for interface to UrlConnection
-        // using 'chunked-encoding'
-        FileInputStream fis;
-        try {
-            fis = new FileInputStream(myfil);
-            FileChannel fc = fis.getChannel(); // Get the file's size and then
-                                               // map it into memory
-            int sz = (int) fc.size();
-            MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, sz);
-            byte[] data2 = new byte[bb.remaining()];
-            Log.d("ParseStarter", "mapfil " + sz + " " + bb.remaining());
-            bb.get(data2);
-            // conform to the interface from the curl examples on full-duplex
-            // calls
-            // see curl examples full-duplex for more on 'PAIR'. Just a globally
-            // uniq value typ=long->String.
-            // API KEY value is part of value in UP_URL_p2
-            upChannel(ROOT + UP_P, messageHandler2, data2);
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
-    private void upChannel(String urlStr, final Handler messageHandler,
-            byte[] arg3) {
-
-        final String murl = urlStr;
-        final byte[] mdata = arg3;
-        Log.d("ParseStarter", "upChan " + mdata.length);
-        new Thread() {
-            public void run() {
-                String response = "";
-                Message msg = Message.obtain();
-                msg.what = 2;
-                Scanner inStream = openHttpsPostConnection(murl, mdata);
-                if (inStream == null) {
-                    Log.d("MainActivity", "wrong scanner");
-                    return;
-                }
-                inStream.hasNext();
-                // process the stream and store it in StringBuilder
-                String temp;
-                while (inStream.hasNextLine()) {
-                    temp = inStream.nextLine();
-                    if (temp.length() > 20) { // filter empty results
-                        response += temp;
-                    }
-                }
-                Log.d("ParseStarter", "POST resp " + response.length());
-                Bundle b = new Bundle();
-                b.putString("post", response);
-                msg.setData(b);
-                // in.close(); // mind the resources
-                messageHandler.sendMessage(msg);
-
-            }
-        }.start();
-
-    }
-
-    // GET for DOWNSTREAM
-    private Scanner openHttpsConnection(String urlStr) {
-        InputStream in = null;
-        int resCode = -1;
-        Log.d("ParseStarter", "dwnURL " + urlStr);
-
-        try {
-            URL url = new URL(urlStr);
-            URLConnection urlConn = url.openConnection();
-
-            if (!(urlConn instanceof HttpsURLConnection)) {
-                throw new IOException("URL is not an Https URL");
-            }
-
-            HttpsURLConnection httpConn = (HttpsURLConnection) urlConn;
-            httpConn.setAllowUserInteraction(false);
-            // TIMEOUT is required
-            httpConn.setInstanceFollowRedirects(true);
-            httpConn.setRequestMethod("GET");
-
-            httpConn.connect();
-
-            resCode = httpConn.getResponseCode();
-            if (resCode == HttpsURLConnection.HTTP_OK) {
-                return new Scanner(httpConn.getInputStream());
-            }
-
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    // GET for UPSTREAM
-    private Scanner openHttpsPostConnection(String urlStr, byte[] data) {
-        InputStream in = null;
-        byte[] mextrad = data;
-        int resCode = -1;
-        OutputStream out = null;
-        // int http_status;
-        try {
-            URL url = new URL(urlStr);
-            URLConnection urlConn = url.openConnection();
-
-            if (!(urlConn instanceof HttpsURLConnection)) {
-                throw new IOException("URL is not an Https URL");
-            }
-
-            HttpsURLConnection httpConn = (HttpsURLConnection) urlConn;
-            httpConn.setAllowUserInteraction(false);
-            httpConn.setInstanceFollowRedirects(true);
-            httpConn.setRequestMethod("POST");
-            httpConn.setDoOutput(true);
-            httpConn.setChunkedStreamingMode(0);
-            httpConn.setRequestProperty("Content-Type", "audio/x-flac; rate="
-                    + sampleRate + ";");
-            httpConn.connect();
-
-            try {
-                // this opens a connection, then sends POST & headers.
-                out = httpConn.getOutputStream();
-                // Note : if the audio is more than 15 seconds
-                // dont write it to UrlConnInputStream all in one block as this
-                // sample does.
-                // Rather, segment the byteArray and on intermittently, sleeping
-                // thread
-                // supply bytes to the urlConn Stream at a rate that approaches
-                // the bitrate ( =30K per sec. in this instance ).
-                Log.d("ParseStarter", "IO beg on data");
-                out.write(mextrad); // one big block supplied instantly to the
-                                    // underlying chunker wont work for duration
-                                    // > 15 s.
-                Log.d("ParseStarter", "IO fin on data");
-                // do you need the trailer?
-                // NOW you can look at the status.
-                resCode = httpConn.getResponseCode();
-
-                Log.d("ParseStarter", "POST OK resp "
-                        + new String(httpConn.getResponseMessage().getBytes()));
-
-                if (resCode / 100 != 2) {
-                    Log.d("ParseStarter", "POST bad io ");
-                }
-
-            } catch (IOException e) {
-                Log.d("ParseStarter", "FATAL " + e);
-
-            }
-
-            if (resCode == HttpsURLConnection.HTTP_OK) {
-                Log.d("ParseStarter", "OK RESP to POST return scanner ");
-                return new Scanner(httpConn.getInputStream());
-            }
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-
     public void run1(View view) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            extract("rec.mp4");
-            extract("rec2.mp4");
+            VoiceTranscriptor transcriptor = new VoiceTranscriptor();
+            transcriptor.extractVoiceFromVideo(Environment.getExternalStorageDirectory() + "/" + "rec.mp4", new VoiceTranscriptor.ExtractionCallbacks() {
+                @Override
+                public void onResult(VoiceTranscriptor transcriptor, String path) {
+                    transcriptor.requestTranscription(path, new NuanceASRProvider(), new ASRProvider.Callback() {
+                        @Override
+                        public void onResult(String transcription) {
+                            Log.i(TAG, "rec nuance: " + transcription);
+                        }
+                    });
+                    //transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
+                    //    @Override
+                    //    public void onResult(String transcription) {
+                    //        Log.i(TAG, "rec google: " + transcription);
+                    //    }
+                    //});
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.i(TAG, "Error to extract: rec. " + error);
+                }
+
+                @Override
+                public void onProgressChanged(int progress) {
+                    //Log.i(TAG, "rec extracted: " + progress);
+                }
+            });
+            transcriptor.extractVoiceFromVideo(Environment.getExternalStorageDirectory() + "/" + "rec2.mp4", new VoiceTranscriptor.ExtractionCallbacks() {
+                @Override
+                public void onResult(VoiceTranscriptor transcriptor, String path) {
+                    transcriptor.requestTranscription(path, new NuanceASRProvider(), new ASRProvider.Callback() {
+                        @Override
+                        public void onResult(String transcription) {
+                            Log.i(TAG, "rec2 nuance: " + transcription);
+                        }
+                    });
+                    //transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
+                    //    @Override
+                    //    public void onResult(String transcription) {
+                    //        Log.i(TAG, "rec2 google: " + transcription);
+                    //    }
+                    //});
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.i(TAG, "Error to extract: rec2. " + error);
+                }
+
+                @Override
+                public void onProgressChanged(int progress) {
+                    Log.i(TAG, "rec2 extracted: " + progress);
+                }
+            });
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private void extract(String fileName) {
-        final MediaExtractor extractor = new MediaExtractor();
-        try {
-            extractor.setDataSource(Environment.getExternalStorageDirectory() + "/" + fileName);
-            Log.i(TAG, fileName);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-        int numTracks = extractor.getTrackCount();
-        MediaCodec codec = null;
-        MediaFormat audioFormat = null;
-        int sampleRate = 0;
-        for (int i = 0; i < numTracks; ++i) {
-            MediaFormat format = extractor.getTrackFormat(i);
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            StringBuilder builder = new StringBuilder();
-            builder.append(mime);
-            if (format.containsKey(MediaFormat.KEY_SAMPLE_RATE)) {
-                builder.append(" ").append(MediaFormat.KEY_SAMPLE_RATE);
-                sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-                builder.append(sampleRate);
-                if (mime.startsWith("audio")) {
-                    extractor.selectTrack(i);
-
-                    try {
-                        audioFormat = format;
-                        codec = MediaCodec.createDecoderByType(mime);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        return;
-                    }
-                }
-            }
-            if (format.containsKey(MediaFormat.KEY_DURATION)) {
-                builder.append(" ").append(MediaFormat.KEY_DURATION);
-                builder.append(format.getLong(MediaFormat.KEY_DURATION));
-            }
-            Log.i(TAG, builder.toString());
-        }
-        if (codec == null) {
-            return;
-        }
-        FileOutputStream os = null;
-        String name = fileName.substring(0, fileName.lastIndexOf('.'));
-        final String pcmFileName = Environment.getExternalStorageDirectory() + "/" + name + "_22000.pcm";
-        try {
-            os = new FileOutputStream(pcmFileName);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return;
-        }
-        final FileOutputStream finalOs = os;
-        codec.setCallback(new MediaCodec.Callback() {
-            MediaFormat mOutputFormat;
-            @Override
-            public void onInputBufferAvailable(MediaCodec codec, int index) {
-                ByteBuffer inputBuffer = codec.getInputBuffer(index);
-                int size = extractor.readSampleData(inputBuffer, 0);
-                if (size >= 0 ) {
-                    codec.queueInputBuffer(index, 0, size, extractor.getSampleTime(), 0);
-                    extractor.advance();
-                } else {
-                    codec.queueInputBuffer(index, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                }
-            }
-
-            @Override
-            public void onOutputBufferAvailable(MediaCodec codec, int index, MediaCodec.BufferInfo info) {
-                ByteBuffer outputBuffer = codec.getOutputBuffer(index);
-                int sampleRate = mOutputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-                byte[] array = new byte[info.size];
-                outputBuffer.get(array);
-                Resampler resampler = new Resampler();
-                try {
-                    byte[] resampled = resampler.reSample(array, 16, sampleRate, 22000);
-                    finalOs.write(resampled, 0, resampled.length);
-                } catch (IOException e) {
-                }
-                codec.releaseOutputBuffer(index, false);
-                if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    Log.i(TAG, "Finished for " + name);
-                    try {
-                        finalOs.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    try {
-                        finalOs.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    codec.stop();
-                    codec.release();
-                    extractor.release();
-                }
-            }
-
-            @Override
-            public void onError(MediaCodec codec, MediaCodec.CodecException e) {
-            }
-
-            @Override
-            public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
-                mOutputFormat = format;
-                Log.i(TAG, name + "->" + format.toString());
-            }
-        });
-        codec.configure(
-                audioFormat,//format of input data ::decoder OR desired format of the output data:encoder
-                null,//Specify a surface on which to render the output of this decoder
-                null,//Specify a crypto object to facilitate secure decryption
-                0 //For Decoding, encoding use: CONFIGURE_FLAG_ENCODE
-        );
-        codec.start();
-    }
-
-    static class Response {
-        public ArrayList<LinkedTreeMap<String, Object>> result;
-        
-        public static String getTranscription(Response response) {
-            String transcription = null;
-            try {
-                if (!response.result.isEmpty()) {
-                    ArrayList<LinkedTreeMap<String, Object>> transcriptions = (ArrayList<LinkedTreeMap<String, Object>>) response.result.get(0).get("alternative");
-                    if (!transcriptions.isEmpty()) {
-                        transcription = (String) transcriptions.get(0).get("transcript");
-                    }
-                }
-            } catch (Exception e) {
-            }
-            return transcription;
-        }
-    }
 }
