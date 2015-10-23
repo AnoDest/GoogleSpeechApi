@@ -1,4 +1,4 @@
-package com.example.voicerecognition;
+package com.example.voicerecognition.asr.dsp;
 
 /**
         * Copyright (C) 2011 Jacquet Wong

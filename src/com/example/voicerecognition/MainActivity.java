@@ -11,6 +11,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import com.example.voicerecognition.asr.ASRProvider;
+import com.example.voicerecognition.asr.NuanceASRProvider;
+import com.example.voicerecognition.asr.VoiceTranscriptor;
+import com.example.voicerecognition.flac.FLACPlayer;
+import com.example.voicerecognition.flac.FLACRecorder;
+import com.example.voicerecognition.flac.FLACRecorderImpl;
 
 /**
  * @author Serhii Kamenkovych Speech API v2

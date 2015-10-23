@@ -8,11 +8,12 @@
  * $Id$
  **/
 
-package com.example.voicerecognition;
+package com.example.voicerecognition.flac;
 
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import com.example.voicerecognition.IRecorder;
 
 import java.lang.ref.WeakReference;
 

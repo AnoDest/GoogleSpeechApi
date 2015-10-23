@@ -1,4 +1,4 @@
-package com.example.voicerecognition;
+package com.example.voicerecognition.asr;
 
 import java.util.HashMap;
 import java.util.Map;

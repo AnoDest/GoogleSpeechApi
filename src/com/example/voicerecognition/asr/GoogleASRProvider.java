@@ -1,4 +1,4 @@
-package com.example.voicerecognition;
+package com.example.voicerecognition.asr;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;

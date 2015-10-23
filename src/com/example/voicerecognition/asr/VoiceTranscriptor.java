@@ -1,4 +1,4 @@
-package com.example.voicerecognition;
+package com.example.voicerecognition.asr;
 
 import android.annotation.TargetApi;
 import android.media.MediaCodec;
@@ -6,6 +6,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.util.Log;
+import com.example.voicerecognition.asr.dsp.Resampler;
 
 import java.io.File;
 import java.io.FileInputStream;

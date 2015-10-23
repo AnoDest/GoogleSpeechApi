@@ -7,7 +7,7 @@
  * $Id$
  **/
 
-package com.example.voicerecognition;
+package com.example.voicerecognition.flac;
 
 
 import java.nio.ByteBuffer;
