@@ -165,9 +165,7 @@ public abstract class ASRProvider {
                 String temp;
                 while (inStream.hasNextLine()) {
                     temp = inStream.nextLine();
-                    if (temp.length() > 20) { // filter empty results
-                        response += temp;
-                    }
+                    response += temp + "\n";
                 }
                 return response;
             }

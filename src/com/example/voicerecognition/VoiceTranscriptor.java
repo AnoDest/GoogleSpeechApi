@@ -194,7 +194,6 @@ public final class VoiceTranscriptor {
             int sz = (int) fc.size();
             MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, sz);
             byte[] data2 = new byte[bb.remaining()];
-            Log.d("ParseStarter", "mapfil " + sz + " " + bb.remaining());
             bb.get(data2);
             // conform to the interface from the curl examples on full-duplex
             // calls

@@ -34,10 +34,14 @@ public class GoogleASRProvider extends ASRProvider {
         if (null == response) {
             return null;
         }
+        String[] results = response.split("\n");
+        if (results.length != 2) {
+            return null;
+        }
         Gson gson = new Gson();
         Response alternatives;
         try {
-            alternatives = gson.fromJson(response, Response.class);
+            alternatives = gson.fromJson(results[1], Response.class);
         } catch (JsonSyntaxException e) {
             return null;
         }

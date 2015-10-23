@@ -155,12 +155,12 @@ public class MainActivity extends Activity {
                             Log.i(TAG, "rec nuance: " + transcription);
                         }
                     });
-                    //transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
-                    //    @Override
-                    //    public void onResult(String transcription) {
-                    //        Log.i(TAG, "rec google: " + transcription);
-                    //    }
-                    //});
+                    transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
+                        @Override
+                        public void onResult(String transcription) {
+                            Log.i(TAG, "rec google: " + transcription);
+                        }
+                    });
                 }
 
                 @Override
@@ -182,12 +182,12 @@ public class MainActivity extends Activity {
                             Log.i(TAG, "rec2 nuance: " + transcription);
                         }
                     });
-                    //transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
-                    //    @Override
-                    //    public void onResult(String transcription) {
-                    //        Log.i(TAG, "rec2 google: " + transcription);
-                    //    }
-                    //});
+                    transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
+                        @Override
+                        public void onResult(String transcription) {
+                            Log.i(TAG, "rec2 google: " + transcription);
+                        }
+                    });
                 }
 
                 @Override
@@ -197,7 +197,7 @@ public class MainActivity extends Activity {
 
                 @Override
                 public void onProgressChanged(int progress) {
-                    Log.i(TAG, "rec2 extracted: " + progress);
+                    //Log.i(TAG, "rec2 extracted: " + progress);
                 }
             });
         }
