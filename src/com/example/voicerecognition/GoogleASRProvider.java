@@ -17,6 +17,8 @@ public class GoogleASRProvider extends ASRProvider {
     private static final String UP_P1 = "?output=json&lang=";
     private static final String UP_P2 = "&key=";
 
+    public static float DURATION_LIMIT = 15f;
+
     @Override
     protected String buildUrl() {
         return ROOT + UP_P1 + getLanguage() + UP_P2 + Constants.GOOGLE_ASR_API_KEY;

@@ -146,7 +146,7 @@ public class MainActivity extends Activity {
     public void run1(View view) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             VoiceTranscriptor transcriptor = new VoiceTranscriptor();
-            transcriptor.extractVoiceFromVideo(Environment.getExternalStorageDirectory() + "/" + "rec.mp4", new VoiceTranscriptor.ExtractionCallbacks() {
+            transcriptor.extractVoiceFromVideo(Environment.getExternalStorageDirectory() + "/" + "rec.mp4", 1.5f, new VoiceTranscriptor.ExtractionCallbacks() {
                 @Override
                 public void onResult(VoiceTranscriptor transcriptor, String path) {
                     transcriptor.requestTranscription(path, new NuanceASRProvider(), new ASRProvider.Callback() {
@@ -155,12 +155,12 @@ public class MainActivity extends Activity {
                             Log.i(TAG, "rec nuance: " + transcription);
                         }
                     });
-                    transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
-                        @Override
-                        public void onResult(String transcription) {
-                            Log.i(TAG, "rec google: " + transcription);
-                        }
-                    });
+                    //transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
+                    //    @Override
+                    //    public void onResult(String transcription) {
+                    //        Log.i(TAG, "rec google: " + transcription);
+                    //    }
+                    //});
                 }
 
                 @Override
@@ -173,7 +173,7 @@ public class MainActivity extends Activity {
                     //Log.i(TAG, "rec extracted: " + progress);
                 }
             });
-            transcriptor.extractVoiceFromVideo(Environment.getExternalStorageDirectory() + "/" + "rec2.mp4", new VoiceTranscriptor.ExtractionCallbacks() {
+            transcriptor.extractVoiceFromVideo(Environment.getExternalStorageDirectory() + "/" + "rec2.mp4", -1, new VoiceTranscriptor.ExtractionCallbacks() {
                 @Override
                 public void onResult(VoiceTranscriptor transcriptor, String path) {
                     transcriptor.requestTranscription(path, new NuanceASRProvider(), new ASRProvider.Callback() {
@@ -182,12 +182,12 @@ public class MainActivity extends Activity {
                             Log.i(TAG, "rec2 nuance: " + transcription);
                         }
                     });
-                    transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
-                        @Override
-                        public void onResult(String transcription) {
-                            Log.i(TAG, "rec2 google: " + transcription);
-                        }
-                    });
+                    //transcriptor.requestTranscription(path, new GoogleASRProvider(), new ASRProvider.Callback() {
+                    //    @Override
+                    //    public void onResult(String transcription) {
+                    //        Log.i(TAG, "rec2 google: " + transcription);
+                    //    }
+                    //});
                 }
 
                 @Override

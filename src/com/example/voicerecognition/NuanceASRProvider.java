@@ -13,6 +13,8 @@ public class NuanceASRProvider extends ASRProvider {
     private static final String UP_P2 = "&appKey=";
     private static final String UP_P3 = "&id=";
 
+    public static float DURATION_LIMIT = 300f;
+
     @Override
     protected String buildUrl() {
         return ROOT + UP_P1 + Constants.NUANCE_ASR_API_ID + UP_P2 + Constants.NUANCE_ASR_API_KEY + UP_P3 + Constants.NUANCE_ASR_ID;
@@ -24,7 +26,7 @@ public class NuanceASRProvider extends ASRProvider {
         headers.put("Content-Type", "audio/x-wav;codec=pcm;bit=16;rate=" + getSampleRate());
         headers.put("Accept-Language", getLanguage());
         headers.put("Transfer-Encoding", "chunked");
-        headers.put("Accept", "application/xml");
+        headers.put("Accept", "text/plain");
         headers.put("Accept-Topic", "Dictation");
         return headers;
     }

@@ -47,10 +47,12 @@ public final class VoiceTranscriptor {
     /**
      * All work will be executed asynchronously with results in callback thread
      * @param videoPath path to video file
+     * @param secondsLimit specifies the limit of last sample time that will be extracted in seconds, -1 to extract all
+     *                     min value 0.5 s.
      * @param callbacks extraction callbacks where results will be provided to
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public void extractVoiceFromVideo(final String videoPath, final ExtractionCallbacks callbacks) {
+    public void extractVoiceFromVideo(final String videoPath, float secondsLimit, final ExtractionCallbacks callbacks) {
         callbacks.onProgressChanged(0);
         final MediaExtractor extractor = new MediaExtractor();
         try {
@@ -110,13 +112,18 @@ public final class VoiceTranscriptor {
         }
         final FileOutputStream finalOs = os;
         final long finalDuration = duration;
+        final long limit = (secondsLimit < 0 || duration < 0.5) ? Long.MAX_VALUE : (long)(1000000L*secondsLimit);
         codec.setCallback(new MediaCodec.Callback() {
             MediaFormat mOutputFormat;
+            long sampleDuration = 0;
             @Override
             public void onInputBufferAvailable(MediaCodec codec, int index) {
                 ByteBuffer inputBuffer = codec.getInputBuffer(index);
                 int size = extractor.readSampleData(inputBuffer, 0);
-                if (size >= 0 ) {
+                if (sampleDuration == 0) {
+                    sampleDuration = extractor.getSampleTime();
+                }
+                if (size >= 0 && extractor.getSampleTime() + sampleDuration < limit) {
                     codec.queueInputBuffer(index, 0, size, extractor.getSampleTime(), 0);
                     extractor.advance();
                 } else {
